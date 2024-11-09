@@ -1,6 +1,6 @@
 import User from '~/models/schemas/User.schema'
 import { databaseServices } from './database.services'
-import { LoginReqBody, RegisterReqBody } from '~/models/requests/users.requests'
+import { LoginReqBody, RegisterReqBody, UpdateMeReqBody } from '~/models/requests/users.requests'
 import { hashPassword } from '~/utils/crypto'
 import { signToken } from '~/utils/jwt'
 import { TokenType, UserVerifyStatus } from '~/constants/enums'
@@ -10,6 +10,7 @@ import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { ObjectId } from 'mongodb'
+import { REGEX_USERNAME } from '~/constants/regex'
 dotenv.config()
 
 class UsersServices {
@@ -80,6 +81,39 @@ class UsersServices {
         message: USERS_MESSAGES.USER_NOT_FOUND
       })
     }
+    return user
+  }
+  async checkForgotPasswordToken({
+    user_id,
+    forgot_password_token
+  }: {
+    user_id: string
+    forgot_password_token: string
+  }) {
+    const user = await databaseServices.users.findOne({
+      _id: new ObjectId(user_id),
+      forgot_password_token
+    })
+    //nếu với 2 thông tin mà k có user thì throw lỗi
+    if (!user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.UNAUTHORIZED,
+        message: USERS_MESSAGES.FORGOT_PASSWORD_TOKEN_IS_INVALID
+      })
+    }
+    //nếu có thì trả về user cho ai cần dùng
+    return user
+  }
+  async checkEmailVerified(user_id: string) {
+    const user = await databaseServices.users.findOne({ _id: new ObjectId(user_id), verify: UserVerifyStatus.Verified })
+    //nếu k có thằng user nào là user_id và đã verify thì throw lỗi
+    if (!user) {
+      throw new ErrorWithStatus({
+        status: HTTP_STATUS.FORBIDDEN,
+        message: USERS_MESSAGES.USER_NOT_VERIFIED
+      })
+    }
+    //ném ra user đó cho ai muốn dùng thì dùng
     return user
   }
 
@@ -224,6 +258,74 @@ class UsersServices {
           http://localhost:8000/reset-password/?forgot_password_token=${forgot_password_token}
       `)
     }
+  }
+  async resetPassword({ user_id, password }: { user_id: string; password: string }) {
+    await databaseServices.users.updateOne({ _id: new ObjectId(user_id) }, [
+      {
+        $set: {
+          password: hashPassword(password),
+          forgot_password_token: '',
+          updated_at: '$$NOW'
+        }
+      }
+    ])
+  }
+  async getMe(user_id: string) {
+    const userInfor = await databaseServices.users.findOne(
+      { _id: new ObjectId(user_id) },
+      {
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0
+        }
+      }
+    )
+    return userInfor //ném ra ngoài cho controller xử lý
+  }
+
+  async updateMe({
+    user_id,
+    payload
+  }: {
+    user_id: string //
+    payload: UpdateMeReqBody
+  }) {
+    //trong payload có 2 trường dữ liệu cần phải xử lý
+    // date_of_birth
+    const _payload = payload.date_of_birth ? { ...payload, date_of_birth: new Date(payload.date_of_birth) } : payload
+    //username
+    if (_payload.username) {
+      //nếu có thì tìm xem có ai giống không
+      const user = await databaseServices.users.findOne({ username: _payload.username })
+      if (user) {
+        throw new ErrorWithStatus({
+          status: HTTP_STATUS.UNPROCESSABLE_ENTITY, //422
+          message: USERS_MESSAGES.USERNAME_ALREADY_EXISTS
+        })
+      }
+    }
+    //nếu username truyền lên mà không có người dùng thì tiến hành cập nhật
+    const user = await databaseServices.users.findOneAndUpdate(
+      { _id: new ObjectId(user_id) }, //
+      [
+        {
+          $set: {
+            ..._payload, //cai moi
+            updated_at: '$$NOW'
+          }
+        }
+      ],
+      {
+        returnDocument: 'after',
+        projection: {
+          password: 0,
+          email_verify_token: 0,
+          forgot_password_token: 0
+        }
+      }
+    )
+    return user
   }
 }
 const usersServices = new UsersServices()

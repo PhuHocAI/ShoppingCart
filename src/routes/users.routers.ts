@@ -1,20 +1,29 @@
 import express, { Request, Response } from 'express'
 import {
   forgotPasswordController,
+  getMeController,
   loginController,
   logoutController,
   registerController,
   resendVerifyEmailController,
-  verifyEmailTokenController
+  resetPasswordController,
+  updateMeController,
+  verifyEmailTokenController,
+  verifyForgotPasswordTokenController
 } from '~/controllers/users.controllers'
+import { filterMiddleware } from '~/middlewares/common.middlewares'
 import {
   accessTokenValidator,
   emailVerifyTokenValidator,
+  forgotPasswordTokenValidator,
   forgotPasswordValidator,
   loginValidator,
   refreshTokenValidator,
-  registerValidator
+  registerValidator,
+  resetPasswordValidator,
+  updateMeValidator
 } from '~/middlewares/users.middlewares'
+import { UpdateMeReqBody } from '~/models/requests/users.requests'
 import { wrapAsync } from '~/utils/handlers'
 const userRouter = express.Router()
 //setup middleware cho UserRouter
@@ -85,6 +94,21 @@ userRouter.post(
   wrapAsync(resendVerifyEmailController)
 )
 
+/*desc: verify forgot password token 
+kiểm tra forgot pwd token coi còn có hiệu lực k
+path users/verify-forgot-password
+method post
+body:{
+  forgot_password_token: string
+}
+
+*/
+userRouter.post(
+  '/verify-forgot-password',
+  forgotPasswordTokenValidator, //kiểm tra forgot_password_token
+  wrapAsync(verifyForgotPasswordTokenController) //xử lý logic verify
+)
+
 /*desc: forgot password
 khi quên mật khẩu thì dùng chức năng này
 path: users/forgot-password
@@ -99,4 +123,61 @@ userRouter.post(
   wrapAsync(forgotPasswordController)
 )
 
+/*desc: reset password
+path: users/reset-password
+method: POST
+body:{
+  password: string
+  confirm_password: string
+  forgot_password_token: string
+}
+*/
+userRouter.post(
+  '/reset-password',
+  forgotPasswordTokenValidator, //kiểm tra forgot_password_token
+  resetPasswordValidator, //kiểm tra password, confirm_password
+  wrapAsync(resetPasswordController) //xử lý logic reset password
+)
+
+/*desc: get me
+lấy thông tin của chính mình
+path: user/me
+method: post
+header:{
+  Authorization: 'Bearer <access_token>'
+}
+*/
+userRouter.post('/me', accessTokenValidator, wrapAsync(getMeController))
+/*
+des: update profile của user
+path: '/me'
+method: patch
+Header: {Authorization: Bearer <access_token>}
+body: {
+  name?: string
+  date_of_birth?: Date
+  bio?: string // optional
+  location?: string // optional
+  website?: string // optional
+  username?: string // optional
+  avatar?: string // optional
+  cover_photo?: string // optional}
+*/
+
+userRouter.patch(
+  '/me',
+  accessTokenValidator,
+  filterMiddleware<UpdateMeReqBody>([
+    'name',
+    'date_of_birth',
+    'bio',
+    'location',
+    'website',
+    'avatar',
+    'username',
+    'cover_photo'
+  ]),
+  updateMeValidator,
+  wrapAsync(updateMeController)
+)
 export default userRouter

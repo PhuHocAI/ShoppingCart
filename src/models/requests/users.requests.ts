@@ -23,3 +23,21 @@ export interface LogoutReqBody {
 export interface VerifyEmailReqQuery extends ParsedQs {
   email_verify_token: string
 }
+export interface VerifyForgotPasswordTokenReqBody {
+  forgot_password_token: string
+}
+export interface UpdateMeReqBody {
+  name?: string
+  date_of_birth?: string //vì ngta truyền lên string dạng ISO8601, k phải date
+  bio?: string
+  location?: string
+  website?: string
+  username?: string
+  avatar?: string
+  cover_photo?: string
+}
+export interface ResetPasswordReqBody {
+  password: string
+  confirm_password: string
+  forgot_password_token: string
+}

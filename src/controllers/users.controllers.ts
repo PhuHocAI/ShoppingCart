@@ -3,8 +3,11 @@ import {
   LoginReqBody,
   LogoutReqBody,
   RegisterReqBody,
+  ResetPasswordReqBody,
   TokenPayLoad,
-  VerifyEmailReqQuery
+  UpdateMeReqBody,
+  VerifyEmailReqQuery,
+  VerifyForgotPasswordTokenReqBody
 } from '~/models/requests/users.requests'
 import usersServices from '~/services/users.services'
 import { ParamsDictionary } from 'express-serve-static-core'
@@ -12,6 +15,7 @@ import { ErrorWithStatus } from '~/models/Errorrs'
 import HTTP_STATUS from '~/constants/httpStatus'
 import { USERS_MESSAGES } from '~/constants/messages'
 import { UserVerifyStatus } from '~/constants/enums'
+import { pick } from 'lodash'
 //controller là handler có nhiệm vụ tập kết dữ liệu từ người dùng
 //và phân phát vào các service đúng chỗ
 
@@ -171,3 +175,113 @@ export const forgotPasswordController = async (
     })
   }
 }
+
+export const verifyForgotPasswordTokenController = async (
+  req: Request<ParamsDictionary, any, VerifyForgotPasswordTokenReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  //vào được đây có nghĩa là forgot_password_token trong body là hợp lệ
+  const { forgot_password_token } = req.body
+  //lấy user_id từ forgot_password_token để tìm xem user có sở hữu forgot_password_token không
+  const { user_id } = req.decode_forgot_password_token as TokenPayLoad
+  //kiểm tra xem forgot_password_token còn trong database này không
+  await usersServices.checkForgotPasswordToken({ user_id, forgot_password_token })
+  //nếu qua hàm trên êm xuôi thì nghĩa là token hợp lệ
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS
+  })
+}
+
+export const resetPasswordController = async (
+  req: Request<ParamsDictionary, any, ResetPasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  //vào được đây có nghĩa là forgot_password_token trong body là hợp lệ
+  const { forgot_password_token, password } = req.body
+  //lấy user_id từ forgot_password_token để tìm xem user có sở hữu forgot_password_token không
+  const { user_id } = req.decode_forgot_password_token as TokenPayLoad
+  //kiểm tra xem forgot_password_token còn trong database này không
+  await usersServices.checkForgotPasswordToken({ user_id, forgot_password_token })
+  //nếu qua hàm trên êm xuôi thì nghĩa là token hợp lệ thì mình cập nhật mật khẩu
+  await usersServices.resetPassword({ user_id, password })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.RESET_PASSWORD_SUCCESS
+  })
+}
+
+export const getMeController = async (req: Request<ParamsDictionary, any, any>, res: Response, next: NextFunction) => {
+  const { user_id } = req.decode_authorization as TokenPayLoad
+  //với user_id này ta sẽ lấy thông tin của user đó
+  //nhưng mình k nên đưa hết thông tin của user cho ngta
+  const userInfor = await usersServices.getMe(user_id)
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.GET_ME_SUCCESS,
+    userInfor
+  })
+}
+
+export const updateMeController = async (
+  req: Request<ParamsDictionary, any, UpdateMeReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  //người dùng gửi access_token để mình biết họ là ai
+  //đồng thời cũng cho mình biết họ là ai thông qua user_id trong payload
+  const { user_id } = req.decode_authorization as TokenPayLoad
+  //req.body chứa các thuộc tính mà người dùng muốn cập nhật
+  const payload = req.body //payload là những gì người dùng gửi lên
+  await usersServices.checkEmailVerified(user_id)
+}
+
+// export const updateMeController = async (
+//   req: Request<ParamsDictionary, any, UpdateMeReqBody>,
+//   res: Response,
+//   next: NextFunction
+// ) => {
+//   //middleware accessTokenValidator đã chạy rồi, nên ta có thể lấy đc user_id từ decoded_authorization
+//   const { user_id } = req.decode_authorization as TokenPayLoad
+//   //user_id để biết phải cập nhật ai
+//   const user = await usersServices.findUserById(user_id)
+//   //kiểm tra user đã verify email chưa, nếu chưa thì không cho cập nhật
+
+//   if (!user) {
+//     throw new ErrorWithStatus({
+//       status: HTTP_STATUS.NOT_FOUND,
+//       message: USERS_MESSAGES.USER_NOT_FOUND
+//     })
+//   }
+//   if (user.verify === UserVerifyStatus.Unverified) {
+//     throw new ErrorWithStatus({
+//       message: USERS_MESSAGES.USER_NOT_VERIFIED,
+//       status: HTTP_STATUS.UNAUTHORIZED
+//     })
+//   }
+//   //bị banned thì cũng không cho cập nhật
+//   if (user.verify === UserVerifyStatus.Banned) {
+//     throw new ErrorWithStatus({
+//       message: USERS_MESSAGES.ACCOUNT_HAS_BEEN_BANNED,
+//       status: HTTP_STATUS.UNAUTHORIZED
+//     })
+//   }
+//   //lấy thông tin mới từ req.body
+//   const body = pick(req.body, [
+//     'name',
+//     'date_of_birth',
+//     'bio',
+//     'location',
+//     'website',
+//     'avatar',
+//     'username',
+//     'cover_photo'
+//   ])
+//   //lấy các property mà client muốn cập nhật
+//   //ta sẽ viết hàm updateMe trong user.services
+//   //nhận vào user_id và body để cập nhật
+//   const result = await usersServices.updateMe(user_id, body)
+//   return res.json({
+//     message: USERS_MESSAGES.UPDATE_PROFILE_SUCCESS, //meesage.ts thêm  UPDATE_ME_SUCCESS: 'Update me success'
+//     result
+//   })
+// }
