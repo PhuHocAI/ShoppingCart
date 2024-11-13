@@ -2,6 +2,8 @@ import express from 'express'
 import userRouter from './routes/users.routers'
 import { databaseServices } from './services/database.services'
 import { defaultErrorHandler } from './middlewares/error.middlewares'
+import mediaRouter from './routes/medias.routers'
+import { initFolder } from './utils/file'
 //dùng express để tạo server
 
 const app = express()
@@ -9,6 +11,7 @@ const PORT = 3000 //3000 cho BE 4000 cho FE
 
 //kết nối với mongodb
 databaseServices.connect()
+initFolder()
 //dựng userRouter
 app.use(express.json()) //Server dùng middlewares biến đổi các chuỗi json được gửi lên thành object
 //handler: những hàm nhận req và trả về res
@@ -16,6 +19,8 @@ app.use(express.json()) //Server dùng middlewares biến đổi các chuỗi js
 //những handler cuối cùng gọi là controller
 //app dùng userRouter
 app.use('/users', userRouter)
+app.use('/medias', mediaRouter)
+
 app.use(defaultErrorHandler)
 //server mở ở port 3000
 //http://localhost:3000/

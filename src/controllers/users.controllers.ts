@@ -3,6 +3,7 @@ import {
   ChangePasswordReqBody,
   LoginReqBody,
   LogoutReqBody,
+  RefreshTokenReqBody,
   RegisterReqBody,
   ResetPasswordReqBody,
   TokenPayLoad,
@@ -256,5 +257,22 @@ export const changePasswordController = async (
   })
   res.status(HTTP_STATUS.OK).json({
     message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS
+  })
+}
+
+export const refreshTokenController = async (
+  req: Request<ParamsDictionary, any, RefreshTokenReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_refresh_token as TokenPayLoad
+  const { refresh_token } = req.body
+  await usersServices.checkRefreshToken({ user_id, refresh_token })
+  //nếu kiểm tra rf còn hiệu lực thì tiến hành refresh token cho người dùng
+  const result = await usersServices.refreshToken({ user_id, refresh_token })
+  //trả cho nguời dùng ac và rf mới
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.REFRESH_TOKEN_SUCCESS,
+    result //ac và rf mới
   })
 }

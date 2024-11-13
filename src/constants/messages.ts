@@ -61,5 +61,6 @@ export const USERS_MESSAGES = {
   VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS: 'Verify forgot password token successfully !!!',
   RESET_PASSWORD_SUCCESS: 'Reset password successfully !!!',
   GET_ME_SUCCESS: 'Get me successfully !!!',
-  CHANGE_PASSWORD_SUCCESS: 'Change password successfully !!!'
+  CHANGE_PASSWORD_SUCCESS: 'Change password successfully !!!',
+  REFRESH_TOKEN_SUCCESS: 'Refresh token successfully !!!'
 } as const //để k ai chỉnh đc
