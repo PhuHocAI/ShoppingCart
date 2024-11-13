@@ -166,6 +166,7 @@ body: {
 
 userRouter.patch(
   '/me',
+  //cần 1 hàm sàn lọc req.body
   accessTokenValidator,
   filterMiddleware<UpdateMeReqBody>([
     'name',

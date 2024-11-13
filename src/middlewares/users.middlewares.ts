@@ -9,6 +9,7 @@ import { ErrorWithStatus } from '~/models/Errorrs'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
 import dotenv from 'dotenv'
+import { REGEX_USERNAME } from '~/constants/regex'
 dotenv.config()
 //interface là bộ mô tả
 //Middleware là handler có nhiệm vụ kiểm tra các dữ liệu mà người dùng gửi lên thông qua request.
@@ -378,6 +379,15 @@ export const updateMeValidator = validate(
             max: 50
           },
           errorMessage: USERS_MESSAGES.USERNAME_LENGTH_MUST_BE_LESS_THAN_50 //messages.ts thêm USERNAME_LENGTH_MUST_BE_LESS_THAN_50: 'Username length must be less than 50'
+        },
+        custom: {
+          options: (value: string, { req }) => {
+            if (!REGEX_USERNAME.test(value)) {
+              throw new Error(USERS_MESSAGES.USERNAME_IS_INVALID)
+            }
+            //Nếu k bị kẹt chỗ nào thì return true
+            return true
+          }
         }
       },
       avatar: imageSchema,

@@ -233,6 +233,13 @@ export const updateMeController = async (
   //req.body chứa các thuộc tính mà người dùng muốn cập nhật
   const payload = req.body //payload là những gì người dùng gửi lên
   await usersServices.checkEmailVerified(user_id)
+  //nếu gọi hàm trên mà không có gì xảy ra thì nghĩa là user đã verify rồi
+  //mình tiến hành cập nhật thông tin mà người dùng cung cấp
+  const userInfor = await usersServices.updateMe({ user_id, payload })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.UPDATE_PROFILE_SUCCESS,
+    userInfor
+  })
 }
 
 // export const updateMeController = async (

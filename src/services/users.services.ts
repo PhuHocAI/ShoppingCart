@@ -131,6 +131,7 @@ class UsersServices {
     const result = await databaseServices.users.insertOne(
       new User({
         _id: user_id,
+        username: `user${user_id.toString()}`,
         email_verify_token,
         ...payLoad,
         password: hashPassword(payLoad.password),
@@ -291,9 +292,12 @@ class UsersServices {
     user_id: string //
     payload: UpdateMeReqBody
   }) {
-    //trong payload có 2 trường dữ liệu cần phải xử lý
-    // date_of_birth
+    //payload này là những gì người dùng muốn update
+    //trong payload có 2 trường dữ liệu/vấn đề cần phải xử lý
+    //1. nếu người dùng update date_of_birth là string vẫn chuyển về date
     const _payload = payload.date_of_birth ? { ...payload, date_of_birth: new Date(payload.date_of_birth) } : payload
+
+    //2. nếu người dùng update username thì nó nên là unique
     //username
     if (_payload.username) {
       //nếu có thì tìm xem có ai giống không
@@ -306,7 +310,7 @@ class UsersServices {
       }
     }
     //nếu username truyền lên mà không có người dùng thì tiến hành cập nhật
-    const user = await databaseServices.users.findOneAndUpdate(
+    const userInfor = await databaseServices.users.findOneAndUpdate(
       { _id: new ObjectId(user_id) }, //
       [
         {
@@ -325,7 +329,7 @@ class UsersServices {
         }
       }
     )
-    return user
+    return userInfor //cho controller gửi người dùng
   }
 }
 const usersServices = new UsersServices()
