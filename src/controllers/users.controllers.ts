@@ -1,5 +1,6 @@
 import e, { NextFunction, Request, Response } from 'express'
 import {
+  ChangePasswordReqBody,
   LoginReqBody,
   LogoutReqBody,
   RegisterReqBody,
@@ -241,54 +242,16 @@ export const updateMeController = async (
     userInfor
   })
 }
-
-// export const updateMeController = async (
-//   req: Request<ParamsDictionary, any, UpdateMeReqBody>,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   //middleware accessTokenValidator đã chạy rồi, nên ta có thể lấy đc user_id từ decoded_authorization
-//   const { user_id } = req.decode_authorization as TokenPayLoad
-//   //user_id để biết phải cập nhật ai
-//   const user = await usersServices.findUserById(user_id)
-//   //kiểm tra user đã verify email chưa, nếu chưa thì không cho cập nhật
-
-//   if (!user) {
-//     throw new ErrorWithStatus({
-//       status: HTTP_STATUS.NOT_FOUND,
-//       message: USERS_MESSAGES.USER_NOT_FOUND
-//     })
-//   }
-//   if (user.verify === UserVerifyStatus.Unverified) {
-//     throw new ErrorWithStatus({
-//       message: USERS_MESSAGES.USER_NOT_VERIFIED,
-//       status: HTTP_STATUS.UNAUTHORIZED
-//     })
-//   }
-//   //bị banned thì cũng không cho cập nhật
-//   if (user.verify === UserVerifyStatus.Banned) {
-//     throw new ErrorWithStatus({
-//       message: USERS_MESSAGES.ACCOUNT_HAS_BEEN_BANNED,
-//       status: HTTP_STATUS.UNAUTHORIZED
-//     })
-//   }
-//   //lấy thông tin mới từ req.body
-//   const body = pick(req.body, [
-//     'name',
-//     'date_of_birth',
-//     'bio',
-//     'location',
-//     'website',
-//     'avatar',
-//     'username',
-//     'cover_photo'
-//   ])
-//   //lấy các property mà client muốn cập nhật
-//   //ta sẽ viết hàm updateMe trong user.services
-//   //nhận vào user_id và body để cập nhật
-//   const result = await usersServices.updateMe(user_id, body)
-//   return res.json({
-//     message: USERS_MESSAGES.UPDATE_PROFILE_SUCCESS, //meesage.ts thêm  UPDATE_ME_SUCCESS: 'Update me success'
-//     result
-//   })
-// }
+export const changePasswordController = async (
+  req: Request<ParamsDictionary, any, ChangePasswordReqBody>,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user_id } = req.decode_authorization as TokenPayLoad
+  const { old_password, password } = req.body
+  await usersServices.changePassword({
+    user_id,
+    old_password, //
+    password
+  })
+}

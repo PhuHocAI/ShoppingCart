@@ -60,5 +60,6 @@ export const USERS_MESSAGES = {
   EMAIL_HAS_BEEN_UNVERIFYED: 'Email has been unverified',
   VERIFY_FORGOT_PASSWORD_TOKEN_SUCCESS: 'Verify forgot password token successfully !!!',
   RESET_PASSWORD_SUCCESS: 'Reset password successfully !!!',
-  GET_ME_SUCCESS: 'Get me successfully !!!'
+  GET_ME_SUCCESS: 'Get me successfully !!!',
+  CHANGE_PASSWORD_SUCCESS: 'Change password successfully !!!'
 } as const //để k ai chỉnh đc
