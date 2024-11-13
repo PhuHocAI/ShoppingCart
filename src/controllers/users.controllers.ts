@@ -254,4 +254,7 @@ export const changePasswordController = async (
     old_password, //
     password
   })
+  res.status(HTTP_STATUS.OK).json({
+    message: USERS_MESSAGES.CHANGE_PASSWORD_SUCCESS
+  })
 }
